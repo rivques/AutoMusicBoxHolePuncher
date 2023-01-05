@@ -7,6 +7,7 @@ import sys
 from pwmio import PWMOut
 import board
 import adafruit_logging
+import digitalio
 
 class HolePuncher:
     logger = adafruit_logging.getLogger()
@@ -73,13 +74,19 @@ class HolePuncher:
             # again, rust match would be so nice here
             if operation.operationType == OperationType.PROGRAMSTART:
                 pass
+
+led = digitalio.DigitalInOut(board.D13)
+led.direction = digitalio.Direction.OUTPUT
+
 async def async_test():
     while True:
-        print("Hello async!")
+        led.value = True
+        await asyncio.sleep(1)
+        led.value = False
         await asyncio.sleep(1)
 
 async def input_test():
-    theInput = await ainput("aInput!")
+    theInput = await ainput("aInput: ")
     print(theInput)
 asyncio.create_task(async_test())
 asyncio.run(input_test())

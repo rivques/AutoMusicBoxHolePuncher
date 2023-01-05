@@ -3,6 +3,7 @@ import adafruit_motor.stepper as stepper
 import asyncio
 import adafruit_logging
 import sys
+import supervisor
 
 def enum(*enum_keys): # https://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
     enums = {enum_key: enum_key for enum_key in enum_keys}
@@ -10,14 +11,15 @@ def enum(*enum_keys): # https://stackoverflow.com/questions/36932/how-can-i-repr
     return type('Enum', (), enums)
 
 async def ainput(string: str) -> str:
-    sys.stdout.write(string+' ')
+    sys.stdout.write(string)
     theInput = ""
     while "\n" not in theInput:
         await asyncio.sleep(0)
         #test for thing on line
-        theNewInput = sys.stdin.read(1)
-        sys.stdout.write(theNewInput)
-        theInput += theNewInput
+        if(supervisor.runtime.serial_bytes_available):
+            theNewInput = sys.stdin.read(1)
+            sys.stdout.write(theNewInput)
+            theInput += theNewInput
     return theInput
             
 
