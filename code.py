@@ -1,5 +1,4 @@
-import time # pyright: reportShadowedImports=false
-from lib.utils import *
+from lib.utils import * # pyright: reportShadowedImports=false
 import asyncio
 from adafruit_motor.stepper import StepperMotor
 from adafruit_motor.servo import Servo
@@ -15,24 +14,13 @@ class HolePuncher:
     
     _hole_puncher_state = HolePuncherState.OFF
 
-    # # hardware
-    # x_stepper_pins = [
-    #     PWMOut(board.D2),
-    #     PWMOut(board.D3),
-    #     PWMOut(board.D4),
-    #     PWMOut(board.D5)
-    # ]
-    # x_stepper = StepperController(StepperMotor(*x_stepper_pins))
-    # y_stepper_pins = [
-    #     PWMOut(board.D6),
-    #     PWMOut(board.D7),
-    #     PWMOut(board.D8),
-    #     PWMOut(board.D9)
-    # ]
-    # y_stepper = StepperController(StepperMotor(*y_stepper_pins))
-    # z_servo_a = Servo(PWMOut(board.D10, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
-    # z_servo_b = Servo(PWMOut(board.D11, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
-    # drill_motor = PWMOut(board.D12)
+    # hardware
+    raw_stepper = StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000))
+    x_stepper = StepperController(raw_stepper)
+    y_stepper = StepperController(StepperMotor(PWMOut(board.D6, frequency=2000), PWMOut(board.D7, frequency=2000), PWMOut(board.D8, frequency=2000), PWMOut(board.D9, frequency=2000)))
+    z_servo_a = Servo(PWMOut(board.SDA, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
+    z_servo_b = Servo(PWMOut(board.A5, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
+    drill_motor = PWMOut(board.D11)
 
     @property
     def hole_puncher_state(self):
@@ -54,43 +42,41 @@ class HolePuncher:
         self._hole_puncher_state = newValue
 
     def __init__(self) -> None:
-        self.hole_puncher_state = HolePuncherState.STARTUP
         self.logger.setLevel(10)
+        self.hole_puncher_state = HolePuncherState.STARTUP
+        
 
     async def run_ui(self):
         # ui loop, will call itself again if it's still turned on
+        if self.hole_puncher_state == HolePuncherState.OFF:
+            return
+        elif self.hole_puncher_state == HolePuncherState.STARTUP:
+            pass
+        elif self.hole_puncher_state == HolePuncherState.IDLE:
+            pass
+        elif self.hole_puncher_state == HolePuncherState.PUNCHING:
+            pass
         
-        if(self.hole_puncher_state != HolePuncherState.OFF):
-            asyncio.run(self.run_ui)
-
-    def parse_file(file):
+    def parse_file(self, file):
         # parse a txt file of a song and return a list of Operations
         pass
     
-    def punch_holes(operations):
+    async def punch_holes(self, operations):
         self.hole_puncher_state = HolePuncherState.PUNCHING
         # given a list of Operations, execute them
         for operation in operations:
             # again, rust match would be so nice here
             if operation.operationType == OperationType.PROGRAMSTART:
                 pass
+            elif operation.operationType == OperationType.PROGRAMEND:
+                self.hole_puncher_state = HolePuncherState.IDLE
+                return
+            elif operation.operationType == OperationType.PUNCHNOTE:
+                pass
+            elif operation.operationType == OperationType.ADVANCEPAPER:
+                pass
 
-led = digitalio.DigitalInOut(board.D13)
-led.direction = digitalio.Direction.OUTPUT
-
-async def async_test():
-    while True:
-        led.value = True
-        await asyncio.sleep(1)
-        led.value = False
-        await asyncio.sleep(1)
-
-async def input_test():
-    theInput = await ainput("aInput: ")
-    print(theInput)
-asyncio.create_task(async_test())
-asyncio.run(input_test())
-if False and __name__ == "__main__":
+if __name__ == "__main__":
     holePuncher = HolePuncher()
     asyncio.run(holePuncher.run_ui())
     asyncio.get_event_loop().run_forever()

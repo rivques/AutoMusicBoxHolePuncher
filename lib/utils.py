@@ -65,7 +65,14 @@ class StepperController:
         self.is_running = False
     
     async def go_to_position(self, position):
-        await self.go_to_step(self.mm_per_degree * self.degrees_per_tick * position)
+        steps_needed = self.mm_per_degree * self.degrees_per_tick * position
+        # round to nearest 16th
+        partial = steps_needed % (1/16)
+        if partial < 1/16/2:
+            steps_needed -= partial
+        else:
+            steps_needed += (1/16)-partial
+        await self.go_to_step(steps_needed)
     
     def redefine_position(self, new_position):
         if self.is_running:
