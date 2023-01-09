@@ -5,11 +5,6 @@ import adafruit_logging
 import sys
 import supervisor
 
-def enum(*enum_keys): # https://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
-    enums = {enum_key: enum_key for enum_key in enum_keys}
-    enums["keys"] = enums.keys()
-    return type('Enum', (), enums)
-
 async def ainput(string: str) -> str:
     sys.stdout.write(string)
     theInput = ""
@@ -21,17 +16,11 @@ async def ainput(string: str) -> str:
             sys.stdout.write(theNewInput)
             theInput += theNewInput
     return theInput
-            
-
-HolePuncherState = enum("OFF", "STARTUP", "IDLE", "PUNCHING")
-
-OperationType = enum("PROGRAMSTART", "PROGRAMEND", "PUNCHNOTE", "ADVANCEPAPER")
 
 class Operation: # i really wish I could use Rust enums for this, they're perfect for the usecase
     def __init__(self, operationType, operationValue):
         self.operationType = operationType
-        self.operationValue = operationValue
-        self.logger = adafruit_logging.getLogger("motor")
+        self.operationValue = operationValue        
 
 class StepperController:
     def __init__(self, in_stepper, mm_per_degree = .1, degrees_per_tick = 1.8, lower_step_limit = 0, upper_step_limit = 1000): # TODO: Improve this with actual numbers
@@ -42,6 +31,7 @@ class StepperController:
         self.lower_step_limit = lower_step_limit
         self.upper_step_limit = upper_step_limit
         self.is_running = False
+        self.logger = adafruit_logging.getLogger("motor")
     
     async def go_to_step(self, steps): # takes an absolute position in steps and tries to go there
         self.is_running = True
@@ -49,23 +39,33 @@ class StepperController:
         if steps == self.ticks: return
         direction = stepper.FORWARD if steps > self.ticks else stepper.BACKWARD
         # first of all, get to an integer number of steps
-        whole_steps, decimal_steps = divmod(self.ticks, 1)
-        microsteps_needed = ((1.0-decimal_steps)/16.0) if direction == stepper.FORWARD else (decimal_steps/16.0)
-        self.logger.debug(f"Need {microsteps_needed} microsteps then {whole_steps} whole steps {'forward' if direction == stepper.FORWARD else 'backward'}")
+        _, decimal_steps = divmod(self.ticks, 1)
+        # self.logger.debug(f"{steps_needed=}, {divmod(steps_needed, 1.0)=}, {divmod(180000.0, 1.0)=}, {steps_needed == 180000.0=}")
+        microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
+        self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
         for i in range(microsteps_needed):
             self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
-            self.ticks += (1 if direction == stepper.forward else -1) * 1/16
+            self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16
             await asyncio.sleep(SECONDS_PER_STEP)
         # now normal steps
+        whole_steps, decimal_steps = divmod(abs(steps - self.ticks), 1)
+        self.logger.debug(f"{whole_steps=}, {decimal_steps=}")
         assert self.ticks - int(self.ticks) == 0, "position should be a whole number"
         for i in range(abs(whole_steps - int(self.ticks))):
             self.stepper.onestep(direction=direction, style=stepper.DOUBLE)
-            self.ticks += 1 if direction == stepper.forward else -1
+            self.ticks += 1 if direction == stepper.FORWARD else -1
+            await asyncio.sleep(SECONDS_PER_STEP)
+        #now the final microsteps
+        microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
+        self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
+        for i in range(microsteps_needed):
+            self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
+            self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16
             await asyncio.sleep(SECONDS_PER_STEP)
         self.is_running = False
     
     async def go_to_position(self, position):
-        steps_needed = self.mm_per_degree * self.degrees_per_tick * position
+        steps_needed = position / (self.mm_per_degree * self.degrees_per_tick)
         # round to nearest 16th
         partial = steps_needed % (1/16)
         if partial < 1/16/2:

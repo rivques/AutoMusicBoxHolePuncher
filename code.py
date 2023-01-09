@@ -10,9 +10,9 @@ import digitalio
 
 class HolePuncher:
     logger = adafruit_logging.getLogger()
-    motor_logger = adafruit_logging.Logger("motor", 10) # level 10 is debug level
+    motor_logger = adafruit_logging.getLogger("motor")
     
-    _hole_puncher_state = HolePuncherState.OFF
+    _hole_puncher_state = "OFF"
 
     # hardware
     raw_stepper = StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000))
@@ -36,45 +36,45 @@ class HolePuncher:
     @hole_puncher_state.setter
     def hole_puncher_state(self, newValue):
         # here's the on state change code
-        if newValue == HolePuncherState.OFF:
+        if newValue == "OFF":
             print("Goodbye!")
             asyncio.get_event_loop().stop()
-        elif newValue == HolePuncherState.STARTUP:
+        elif newValue == "STARTUP":
             pass
-        elif newValue == HolePuncherState.IDLE:
+        elif newValue == "IDLE":
             pass
-        elif newValue == HolePuncherState.PUNCHING:
+        elif newValue == "PUNCHING":
             self.num_operations = 0
             self.operation_num = 0
             self.last_string_len = 0
             self.need_ui_update = True
         else:
-            raise ValueError(f"Unknown state value! Must be one of {', '.join([key for key in HolePuncherState.keys])}")
+            raise ValueError(f"Unknown state value! Must be one of OFF, STARTUP, IDLE, PUNCHING")
         self._hole_puncher_state = newValue
 
     def __init__(self) -> None:
-        self.logger.setLevel(10)
-        self.hole_puncher_state = HolePuncherState.STARTUP
+        self.logger.setLevel(adafruit_logging.DEBUG)
+        self.motor_logger.setLevel(adafruit_logging.INFO)
+        self.hole_puncher_state = "STARTUP"
 
     async def run_ui(self):
         # ui loop, will call itself again if it's still turned on
-        global HolePuncherState
-        if self.hole_puncher_state == HolePuncherState.OFF:
+        if self.hole_puncher_state == "OFF":
             return
-        elif self.hole_puncher_state == HolePuncherState.STARTUP:
+        elif self.hole_puncher_state == "STARTUP":
             print("Welcome to the Automatic Music Box Hole Puncher!")
-            self.hole_puncher_state = HolePuncherState.IDLE
-        elif self.hole_puncher_state == HolePuncherState.IDLE:
+            self.hole_puncher_state = "IDLE"
+        elif self.hole_puncher_state == "IDLE":
             try:
                 filename = await ainput("Please enter a filename to print, or hit Ctrl-C to quit: ")
             except KeyboardInterrupt:
                 sys.stdout.write("\n")
-                self.hole_puncher_state = HolePuncherState.OFF
+                self.hole_puncher_state = "OFF"
                 return
-            HolePuncherState = HolePuncherState.PUNCHING
+            self.hole_puncher_state = "PUNCHING"
             self.running_filename = filename
             asyncio.create_task(self.punch_holes(self.parse_file(filename)))
-        elif self.hole_puncher_state == HolePuncherState.PUNCHING:
+        elif self.hole_puncher_state == "PUNCHING":
             # cool UI stuff here
             while not self.need_ui_update:
                 await(asyncio.sleep(0))
@@ -90,7 +90,7 @@ class HolePuncher:
         
     def parse_file(self, file):
         # parse a txt file of a song and return a list of Operations
-        pass
+        return [Operation("PROGRAMSTART", 0), Operation("ADVANCEPAPER", 1000), Operation("PUNCHNOTE", 20), Operation("ADVANCEPAPER", 10000), Operation("PROGRAMEND", 0)]
     
     async def punch_holes(self, operations):
         self.y_stepper.redefine_position(0)
@@ -99,16 +99,16 @@ class HolePuncher:
         for operation_num, operation in enumerate(operations):
             self.operation_num = operation_num
             # again, rust match would be so nice here
-            if operation.operationType == OperationType.PROGRAMSTART:
+            if operation.operationType == "PROGRAMSTART":
                 pass
-            elif operation.operationType == OperationType.PROGRAMEND:
+            elif operation.operationType == "PROGRAMEND":
                 print(f"Finished song!")
-                self.hole_puncher_state = HolePuncherState.IDLE
+                self.hole_puncher_state = "IDLE"
                 return
-            elif operation.operationType == OperationType.PUNCHNOTE:
+            elif operation.operationType == "PUNCHNOTE":
                 pass
-            elif operation.operationType == OperationType.ADVANCEPAPER:
-                await self.y_stepper.go_to_position(operation.operationValue * 1000) # operationValue is in microns, position is in mm
+            elif operation.operationType == "ADVANCEPAPER":
+                await self.y_stepper.go_to_position(operation.operationValue / 1000) # operationValue is in microns, position is in mm
 
 if __name__ == "__main__":
     holePuncher = HolePuncher()
