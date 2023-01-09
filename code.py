@@ -6,11 +6,14 @@ import sys
 from pwmio import PWMOut
 import board
 import adafruit_logging
-import digitalio
+import re
+import os
 
 class HolePuncher:
     logger = adafruit_logging.getLogger()
     motor_logger = adafruit_logging.getLogger("motor")
+
+    line_parsing_re = re.compile(r"(.*):(\d+)")
     
     _hole_puncher_state = "OFF"
 
@@ -25,6 +28,7 @@ class HolePuncher:
     # punching state for ui
     num_operations = 0
     operation_num = 0
+    operations = []
     last_string_len = 0
     need_ui_update = False
     running_filename = ""
@@ -65,8 +69,9 @@ class HolePuncher:
             print("Welcome to the Automatic Music Box Hole Puncher!")
             self.hole_puncher_state = "IDLE"
         elif self.hole_puncher_state == "IDLE":
+            print(f"\nFound files {', '.join([file for file in os.listdir()])}")
             try:
-                filename = await ainput("Please enter a filename to print, or hit Ctrl-C to quit: ")
+                filename = (await ainput("Please enter a filename to print, or hit Ctrl-C to quit: ")).strip()
             except KeyboardInterrupt:
                 sys.stdout.write("\n")
                 self.hole_puncher_state = "OFF"
@@ -76,39 +81,52 @@ class HolePuncher:
             asyncio.create_task(self.punch_holes(self.parse_file(filename)))
         elif self.hole_puncher_state == "PUNCHING":
             # cool UI stuff here
-            while not self.need_ui_update:
-                await(asyncio.sleep(0))
-            self.need_ui_update = False
             # delete what we wrote last
-            print("\b" * self.last_string_len, end="")
+            sys.stdout.write("\b" * self.last_string_len)
+            sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
+            sys.stdout.write("\b" * self.last_string_len)
             # compose this status update
-            status_string = f"Printing {self.running_filename}, instruction {self.operation_num}/{self.num_operations}"
+            status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}"
             self.last_string_len = len(status_string)
-            print(status_string, end="")
-
-        asyncio.run(self.run_ui())
+            sys.stdout.write(status_string)
+        await asyncio.sleep(.25)
+        asyncio.create_task(self.run_ui())
         
     def parse_file(self, file):
         # parse a txt file of a song and return a list of Operations
-        return [Operation("PROGRAMSTART", 0), Operation("ADVANCEPAPER", 1000), Operation("PUNCHNOTE", 20), Operation("ADVANCEPAPER", 10000), Operation("PROGRAMEND", 0)]
+        result = []
+        with open(file) as f:
+            for line in f.readlines():
+                mo = self.line_parsing_re.match(line)
+                if(mo is None):
+                    self.logger.error(f"Failed to parse (no match) {line}")
+                    continue
+                result.append(Operation(mo.group(1), int(mo.group(2))))
+        return result
     
     async def punch_holes(self, operations):
         self.y_stepper.redefine_position(0)
         # given a list of Operations, execute them
+        self.operations = operations
         self.num_operations = len(operations)
         for operation_num, operation in enumerate(operations):
             self.operation_num = operation_num
             # again, rust match would be so nice here
-            if operation.operationType == "PROGRAMSTART":
+            if operation.operationType == "PROGRAM START":
                 pass
-            elif operation.operationType == "PROGRAMEND":
-                print(f"Finished song!")
+            elif operation.operationType == "PROGRAM END":
                 self.hole_puncher_state = "IDLE"
                 return
-            elif operation.operationType == "PUNCHNOTE":
-                pass
-            elif operation.operationType == "ADVANCEPAPER":
+            elif operation.operationType == "PUNCH NOTE":
+                await self.x_stepper.go_to_position(self.get_position_for_note(operation.operationValue))
+                # TODO: move Z axis here, spindle, dwell
+            elif operation.operationType == "ADVANCE PAPER":
                 await self.y_stepper.go_to_position(operation.operationValue / 1000) # operationValue is in microns, position is in mm
+            else:
+                pass # probably got a metadata command, ignore it
+        
+    def get_position_for_note(self, note):
+        return note*4 # placeholder
 
 if __name__ == "__main__":
     holePuncher = HolePuncher()

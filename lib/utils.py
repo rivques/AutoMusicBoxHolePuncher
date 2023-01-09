@@ -1,4 +1,3 @@
-import time
 import adafruit_motor.stepper as stepper
 import asyncio
 import adafruit_logging
@@ -15,12 +14,15 @@ async def ainput(string: str) -> str:
             theNewInput = sys.stdin.read(1)
             sys.stdout.write(theNewInput)
             theInput += theNewInput
-    return theInput
+    return theInput # ''.join(filter(str.isalnum, theInput)) # remove non-aplanumeric chars
 
 class Operation: # i really wish I could use Rust enums for this, they're perfect for the usecase
     def __init__(self, operationType, operationValue):
         self.operationType = operationType
-        self.operationValue = operationValue        
+        self.operationValue = operationValue
+    
+    def __repr__(self):
+        return f"{self.operationType}: {self.operationValue}"
 
 class StepperController:
     def __init__(self, in_stepper, mm_per_degree = .1, degrees_per_tick = 1.8, lower_step_limit = 0, upper_step_limit = 1000): # TODO: Improve this with actual numbers
@@ -35,21 +37,21 @@ class StepperController:
     
     async def go_to_step(self, steps): # takes an absolute position in steps and tries to go there
         self.is_running = True
-        SECONDS_PER_STEP = .05 # this is overly slow, for testing
+        SECONDS_PER_STEP = .005 # this is overly slow, for testing
         if steps == self.ticks: return
         direction = stepper.FORWARD if steps > self.ticks else stepper.BACKWARD
         # first of all, get to an integer number of steps
         _, decimal_steps = divmod(self.ticks, 1)
         # self.logger.debug(f"{steps_needed=}, {divmod(steps_needed, 1.0)=}, {divmod(180000.0, 1.0)=}, {steps_needed == 180000.0=}")
         microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
-        self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
+        # self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
         for i in range(microsteps_needed):
             self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
             self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16
             await asyncio.sleep(SECONDS_PER_STEP)
         # now normal steps
         whole_steps, decimal_steps = divmod(abs(steps - self.ticks), 1)
-        self.logger.debug(f"{whole_steps=}, {decimal_steps=}")
+        # self.logger.debug(f"{whole_steps=}, {decimal_steps=}")
         assert self.ticks - int(self.ticks) == 0, "position should be a whole number"
         for i in range(abs(whole_steps - int(self.ticks))):
             self.stepper.onestep(direction=direction, style=stepper.DOUBLE)
@@ -57,7 +59,7 @@ class StepperController:
             await asyncio.sleep(SECONDS_PER_STEP)
         #now the final microsteps
         microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
-        self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
+        # self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
         for i in range(microsteps_needed):
             self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
             self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16
@@ -74,9 +76,12 @@ class StepperController:
             steps_needed += (1/16)-partial
         await self.go_to_step(steps_needed)
     
+    def get_position(self):
+        return self.ticks * self.degrees_per_tick * self.mm_per_degree
+    
     def redefine_position(self, new_position):
         if self.is_running:
             return False # could not change position while motor is running
-        self.position = new_position
+        self.ticks = new_position
         return True
         
