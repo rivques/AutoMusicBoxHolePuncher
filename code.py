@@ -8,6 +8,7 @@ import board
 import adafruit_logging
 import re
 import os
+import gc
 
 class HolePuncher:
     logger = adafruit_logging.getLogger()
@@ -70,27 +71,34 @@ class HolePuncher:
             self.hole_puncher_state = "IDLE"
         elif self.hole_puncher_state == "IDLE":
             print(f"\nFound files {', '.join([file for file in os.listdir()])}")
-            try:
-                filename = (await ainput("Please enter a filename to print, or hit Ctrl-C to quit: ")).strip()
-            except KeyboardInterrupt:
-                sys.stdout.write("\n")
-                self.hole_puncher_state = "OFF"
-                return
+            good_filename = False
+            while not good_filename:
+                try:
+                    filename = (await ainput("Please enter a filename to print, or hit Ctrl-C to quit: ")).strip()
+                    open(filename).close() # check if it exists
+                except KeyboardInterrupt:
+                    sys.stdout.write("\n")
+                    self.hole_puncher_state = "OFF"
+                    return
+                except OSError:
+                    print("The file doesn't exist.", end=" ")
+                else:
+                    good_filename = True
             self.hole_puncher_state = "PUNCHING"
             self.running_filename = filename
             asyncio.create_task(self.punch_holes(self.parse_file(filename)))
         elif self.hole_puncher_state == "PUNCHING":
             # cool UI stuff here
+            # compose this status update
+            status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}, mem: {gc.mem_free()}, alloc: {gc.mem_alloc()}, task list len: ### "
             # delete what we wrote last
             sys.stdout.write("\b" * self.last_string_len)
             sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
             sys.stdout.write("\b" * self.last_string_len)
-            # compose this status update
-            status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}"
-            self.last_string_len = len(status_string)
             sys.stdout.write(status_string)
+            self.last_string_len = len(status_string)
         await asyncio.sleep(.25)
-        asyncio.create_task(self.run_ui())
+        return
         
     def parse_file(self, file):
         # parse a txt file of a song and return a list of Operations
@@ -119,7 +127,13 @@ class HolePuncher:
                 return
             elif operation.operationType == "PUNCH NOTE":
                 await self.x_stepper.go_to_position(self.get_position_for_note(operation.operationValue))
-                # TODO: move Z axis here, spindle, dwell
+                self.z_servo_a.angle = 45
+                self.z_servo_b.angle = 135
+                self.drill_motor.duty_cycle = 65535
+                await asyncio.sleep(2)
+                self.z_servo_a.angle = 90
+                self.z_servo_b.angle = 90
+                self.drill_motor.duty_cycle = 0
             elif operation.operationType == "ADVANCE PAPER":
                 await self.y_stepper.go_to_position(operation.operationValue / 1000) # operationValue is in microns, position is in mm
             else:
@@ -127,8 +141,12 @@ class HolePuncher:
         
     def get_position_for_note(self, note):
         return note*4 # placeholder
+    
+    async def run_ui_forever(self):
+        while True:
+             await holePuncher.run_ui()
 
 if __name__ == "__main__":
     holePuncher = HolePuncher()
-    asyncio.run(holePuncher.run_ui())
+    asyncio.create_task(holePuncher.run_ui_forever())
     asyncio.get_event_loop().run_forever()
