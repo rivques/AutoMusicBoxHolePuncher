@@ -44,14 +44,14 @@ class StepperController:
         _, decimal_steps = divmod(self.ticks, 1)
         # self.logger.debug(f"{steps_needed=}, {divmod(steps_needed, 1.0)=}, {divmod(180000.0, 1.0)=}, {steps_needed == 180000.0=}")
         microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
-        # self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
+        self.logger.debug(f"to whole: {self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
         for i in range(microsteps_needed):
             self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
             self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16
             await asyncio.sleep(SECONDS_PER_STEP)
         # now normal steps
         whole_steps, decimal_steps = divmod(abs(steps - self.ticks), 1)
-        # self.logger.debug(f"{whole_steps=}, {decimal_steps=}")
+        self.logger.debug(f"big motion: {whole_steps=}, {decimal_steps=}")
         assert self.ticks - int(self.ticks) == 0, "position should be a whole number"
         for i in range(abs(whole_steps - int(self.ticks))):
             self.stepper.onestep(direction=direction, style=stepper.DOUBLE)
@@ -59,7 +59,7 @@ class StepperController:
             await asyncio.sleep(SECONDS_PER_STEP)
         #now the final microsteps
         microsteps_needed = 0 if decimal_steps == 0 else (((1.0-decimal_steps)*16.0) if direction == stepper.FORWARD else (decimal_steps*16.0))
-        # self.logger.debug(f"{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
+        self.logger.debug(f"to micro:{self.ticks=}, {decimal_steps=}, {microsteps_needed=} {'forward' if direction == stepper.FORWARD else 'backward'}")
         for i in range(microsteps_needed):
             self.stepper.onestep(direction=direction, style=stepper.MICROSTEP)
             self.ticks += (1 if direction == stepper.FORWARD else -1) * 1/16

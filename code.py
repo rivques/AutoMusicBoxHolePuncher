@@ -58,7 +58,7 @@ class HolePuncher:
 
     def __init__(self) -> None:
         self.logger.setLevel(adafruit_logging.DEBUG)
-        self.motor_logger.setLevel(adafruit_logging.INFO)
+        self.motor_logger.setLevel(adafruit_logging.DEBUG)
         self.hole_puncher_state = "STARTUP"
 
     async def run_ui(self):
@@ -91,10 +91,10 @@ class HolePuncher:
             # compose this status update
             status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}, mem: {gc.mem_free()}, alloc: {gc.mem_alloc()}, task list len: ### "
             # delete what we wrote last
-            sys.stdout.write("\b" * self.last_string_len)
-            sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
-            sys.stdout.write("\b" * self.last_string_len)
-            sys.stdout.write(status_string)
+            # sys.stdout.write("\b" * self.last_string_len)
+            # sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
+            # sys.stdout.write("\b" * self.last_string_len)
+            sys.stdout.write(status_string + '\n')
             self.last_string_len = len(status_string)
         await asyncio.sleep(.25)
         return
