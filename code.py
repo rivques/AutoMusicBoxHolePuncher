@@ -19,7 +19,7 @@ class HolePuncher:
     _hole_puncher_state = "OFF"
 
     # hardware
-    x_stepper = StepperController(StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000)))
+    x_stepper = StepperController(StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000)), mm_per_degree=0.106)
     y_stepper = StepperController(StepperMotor(PWMOut(board.D6, frequency=2000), PWMOut(board.D7, frequency=2000), PWMOut(board.D8, frequency=2000), PWMOut(board.D9, frequency=2000)))
     z_servo_a = Servo(PWMOut(board.SDA, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
     z_servo_b = Servo(PWMOut(board.A5, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
@@ -58,7 +58,7 @@ class HolePuncher:
 
     def __init__(self) -> None:
         self.logger.setLevel(adafruit_logging.DEBUG)
-        self.motor_logger.setLevel(adafruit_logging.DEBUG)
+        self.motor_logger.setLevel(adafruit_logging.INFO)
         self.hole_puncher_state = "STARTUP"
 
     async def run_ui(self):
@@ -89,12 +89,12 @@ class HolePuncher:
         elif self.hole_puncher_state == "PUNCHING":
             # cool UI stuff here
             # compose this status update
-            status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}, mem: {gc.mem_free()}, alloc: {gc.mem_alloc()}, task list len: ### "
+            status_string = f"Printing {self.running_filename}, instruction {self.operation_num+1}/{self.num_operations}: {self.operations[self.operation_num]}, x: {self.x_stepper.get_position()}, y: {self.y_stepper.get_position()}, mem free: {gc.mem_free()}, alloc: {gc.mem_alloc()}"
             # delete what we wrote last
-            # sys.stdout.write("\b" * self.last_string_len)
-            # sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
-            # sys.stdout.write("\b" * self.last_string_len)
-            sys.stdout.write(status_string + '\n')
+            sys.stdout.write("\b" * self.last_string_len)
+            sys.stdout.write(" " * self.last_string_len) # \b only moves the cursor, need to overwrite with spaces to delete
+            sys.stdout.write("\b" * self.last_string_len)
+            sys.stdout.write(status_string)
             self.last_string_len = len(status_string)
         await asyncio.sleep(.25)
         return
