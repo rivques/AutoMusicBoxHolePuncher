@@ -60,6 +60,8 @@ class HolePuncher:
         self.logger.setLevel(adafruit_logging.DEBUG)
         self.motor_logger.setLevel(adafruit_logging.INFO)
         self.hole_puncher_state = "STARTUP"
+        self.z_servo_a.angle = 90
+        self.z_servo_b.angle = 90
 
     async def run_ui(self):
         # ui loop, will call itself again if it's still turned on
@@ -126,8 +128,8 @@ class HolePuncher:
                 return
             elif operation.operationType == "PUNCH NOTE":
                 await self.x_stepper.go_to_position(self.get_position_for_note(operation.operationValue))
-                self.z_servo_a.angle = 45
-                self.z_servo_b.angle = 135
+                self.z_servo_a.angle = 55
+                self.z_servo_b.angle = 125
                 self.drill_motor.duty_cycle = 65535
                 await asyncio.sleep(2)
                 self.z_servo_a.angle = 90
