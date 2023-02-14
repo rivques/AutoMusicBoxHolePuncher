@@ -63,7 +63,8 @@ I made a TUI that shows the progress through the current file, the currently exe
 !TODO: talk about eccentric nuts, V-roller assembly
 ## The drill bit
 !TODO: FLIR image of drill bit heating
-# Media
+# Results
+We ultimately ran out of time to complete the project. We were very close, but our final product at the deadline wasn't able to actually drill through the paper. That said, we built an accurate X carriage on V-rollers, a multitasking controller, a paper feeder, and a (weak) endmill.
 ![Here's how you make an image, describe the image here](docs/auto-music-box/path-to-image.jpg "Caption for the image here")
 # Reflection and Lessons Learned
 ## SO MANY PRINTS
