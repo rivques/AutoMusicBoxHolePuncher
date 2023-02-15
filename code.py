@@ -20,7 +20,7 @@ class HolePuncher:
 
     # hardware
     x_stepper = StepperController(StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000)), mm_per_degree=0.106)
-    y_stepper = StepperController(StepperMotor(PWMOut(board.D6, frequency=2000), PWMOut(board.D7, frequency=2000), PWMOut(board.D8, frequency=2000), PWMOut(board.D9, frequency=2000)))
+    y_stepper = StepperController(StepperMotor(PWMOut(board.D6, frequency=2000), PWMOut(board.D7, frequency=2000), PWMOut(board.D8, frequency=2000), PWMOut(board.D9, frequency=2000)), mm_per_degree=(65*2*3.1415)/360)
     z_servo_a = Servo(PWMOut(board.SDA, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
     z_servo_b = Servo(PWMOut(board.A5, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
     drill_motor = PWMOut(board.D11)
@@ -43,6 +43,7 @@ class HolePuncher:
         if newValue == "OFF":
             print("Goodbye!")
             asyncio.get_event_loop().stop()
+            sys.exit(0)
         elif newValue == "STARTUP":
             pass
         elif newValue == "IDLE":
@@ -131,7 +132,7 @@ class HolePuncher:
                 self.z_servo_a.angle = 55
                 self.z_servo_b.angle = 125
                 self.drill_motor.duty_cycle = 65535
-                await asyncio.sleep(2)
+                await asyncio.sleep(4)
                 self.z_servo_a.angle = 90
                 self.z_servo_b.angle = 90
                 self.drill_motor.duty_cycle = 0
@@ -141,7 +142,7 @@ class HolePuncher:
                 pass # probably got a metadata command, ignore it
         
     def get_position_for_note(self, note):
-        return note*4 # placeholder
+        return note*(57/30)
     
     async def run_ui_forever(self):
         while True:
