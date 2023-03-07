@@ -18,12 +18,14 @@ class HolePuncher:
     
     _hole_puncher_state = "OFF"
 
+    USING_DRILL = False
+
     # hardware
     x_stepper = StepperController(StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000)), mm_per_degree=0.106)
     y_stepper = StepperController(StepperMotor(PWMOut(board.D6, frequency=2000), PWMOut(board.D7, frequency=2000), PWMOut(board.D8, frequency=2000), PWMOut(board.D9, frequency=2000)), mm_per_degree=(65*2*3.1415)/360)
     z_servo_a = Servo(PWMOut(board.SDA, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
     z_servo_b = Servo(PWMOut(board.A5, duty_cycle=2 ** 15, frequency=50), min_pulse=500, max_pulse=2500)
-    drill_motor = PWMOut(board.D11)
+    hole_actuator = PWMOut(board.D11)
     
     # punching state for ui
     num_operations = 0
@@ -129,13 +131,18 @@ class HolePuncher:
                 return
             elif operation.operationType == "PUNCH NOTE":
                 await self.x_stepper.go_to_position(self.get_position_for_note(operation.operationValue))
-                self.z_servo_a.angle = 55
-                self.z_servo_b.angle = 125
-                self.drill_motor.duty_cycle = 65535
-                await asyncio.sleep(4)
-                self.z_servo_a.angle = 90
-                self.z_servo_b.angle = 90
-                self.drill_motor.duty_cycle = 0
+                if self.USING_DRILL:
+                    self.z_servo_a.angle = 55
+                    self.z_servo_b.angle = 125
+                    self.hole_actuator.duty_cycle = 65535
+                    await asyncio.sleep(4)
+                    self.z_servo_a.angle = 90
+                    self.z_servo_b.angle = 90
+                    self.hole_actuator.duty_cycle = 0
+                else:
+                    self.hole_actuator.duty_cycle = 65535
+                    await asyncio.sleep(1)
+                    self.hole_actuator.duty_cycle = 0
             elif operation.operationType == "ADVANCE PAPER":
                 await self.y_stepper.go_to_position(operation.operationValue / 1000) # operationValue is in microns, position is in mm
             else:
