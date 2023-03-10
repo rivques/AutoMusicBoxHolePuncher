@@ -19,11 +19,13 @@ For this assignment, we had to build a robot arm. To narrow down the endless pos
 - assorted fasteners
 - 3D printed parts
 # CAD
-There *should* be captions under each image. If not, hover over the image to see the caption.
+__There *should* be captions under each image. If not, hover over the image to see the caption.__
 
 ![A wide shot of the full CAD assembly](/docs/AMBHP/overview_CAD.png "The full assembly of the machine.")
 ![A shot of the drill bit holder](/docs/AMBHP/drillbit_CAD.png "The drill bit chuck, designed to hold some copper shot in an attempt to have more drilling force.")
 ![A shot of the toolhead assembly](/docs/AMBHP/toolhead_CAD.png "The toolhead. The chuck is spun by the TT motor and is moved up and down on the blue carriage by the two servos.")
+
+
 # Circuit
 Our circuit is mostly just an interface between an Arduino-compatible and the various actuators:
 ![A Fritzing diagram of our circuit](/docs/AMBHP/fritzing.png "The circuit for our project.")
@@ -66,16 +68,29 @@ Order of operations was critical to the assembly of this part. Pretty much every
 ## The drill bit
 To securely attach the drill bit to its chuck, we tried a few options. We initially tried simply gripping it from the side with a rubber band, but this was far too weak. We ended up with melting the bit into place: We would heat the bit up with a heat gun, then push it into the perfectly-sized hole in our part. This causes the plastic of the part to melt slightly around the bit, securing it in place when it solidifies.
 ![A FLIR image of the heating of the drill bit](/docs/AMBHP/drillbit_FLIR.jpg "A FLIR image of the heating of the drill bit.")
-# Results
-We ultimately ran out of time to complete the project. We were very close, but our final product at the deadline wasn't able to actually drill through the paper. That said, we built an accurate X carriage on V-rollers, a multitasking controller, a paper feeder, and a (weak) endmill.
+# Process and results
+## Plan A - Drill Bit
+We originally planned to use a drill bit to drill a hole through the paper. However, the weight alone of the drill bit was not enough to punch through the paper. We tried adding some copper shot to the drill bit holder to make it heavier, but this wasn't enough.
 
-![A GIF of the machine trying to drill through some paper](/docs/AMBHP/final_product.gif "So close! Just need a little more force on the paper.")
+![A GIF of the machine trying to drill through some paper](/docs/AMBHP/plan_a.gif "So close! Just need a little more force on the paper.")
+## Plan B - Drill Bit But Better
+Next we tried adding a plate on top of the drill bit holer to forcibly pull the bit down instead of just letting it sit under its own weight. We also corrected the spin direction of the drill. However, this just stalled the drill bit against the paper.
+## Plan C - Solenoid
+We tried pivoting to a 12v solenoid to punch a hole. However, the solenoid (by nature) was very strong at holding itself in its extended position but not incredibly strong along its stroke to get there. Because we needed high force along the stroke, this didn't work.
+## Plan D - Wait Let's Go Back To The Drill Bit
+With the failure of the solenoid, and about 36 hours until the project deadline, we tried going back to the drill bit. We took a brand new, factory-sharp bit and superglued it in the holder (because it wasn't tight enough to friction-fit anymore and there wasn't time to print a new one.) And, with a human helping to push down, it drilled a hole! However, when we let it try to go on its own, the wire links between the servos and the Z carriage became untwisted under the higher load. To fix this would have required a larger redesign than we had time for, so we decided to accept our (temporary) defeat and wrap up documentation before the due date. We were very close to completeness, but our final product at the deadline wasn't able to accurately drill through the paper. That said, we built an accurate X carriage on V-rollers, a multitasking controller, a paper feeder, and a (weak) endmill.
+
 # Reflection and Lessons Learned
-## SO MANY PRINTS
-We ended up printing an enormous number of prototypes, mostly for the carriage. About half of these were used to develop code with while waiting for more design work to get done and the other half were instantly scrapped after a design flaw became clear. Most of these flaws were based on forgetting that hardware can't magically appear in its position (and that said hardware usually needs a way for a screwdriver to get at it). On the next project we design, we have learned the hard way to think about how a part is going to get where it needs to be before putting it somewhere.
+## Proof of Concept
+Our proof of concept, which was a prototype of the Z carriage and drill, was never actually tested. We barely finished it before its deadline, so after submitting it we went straight into full development as we were behind schedule. If we had tested the proof of concept, we would have caught the (many) problems with our hole-making methodology with more than enough time to fix them. Instead, we only realized it when we were doing full integration and had little time to fix the problem.
+## So Many Prints
+We ended up printing an enormous number of prototypes, mostly for the carriage. About half of these were used to develop code with while waiting for more design work to get done and the other half were instantly scrapped after a design flaw became clear. Most of these flaws were based on forgetting that hardware can't magically appear in its position (and that said hardware usually needs a way for a screwdriver to get at it). On the next project we design, we have learned the hard way to think about how a part is going to get where it needs to be before putting it somewhere. 
 ## Scheduling
 We set a nice schedule for this project at the beginning, but weren't able to stick to it. This was mostly because the designs for the proof of concept took far longer than anticipated, and ate up about 3 weeks of time. This may have been because we tried to dive into CAD and hope things worked themselves out instead of first planning out exactly what would be going on on paper.
 ## Integration Hell
 Integration Hell is where you are when you are fixing all the problems that happen when different subassemblies are put together. It's an inevitability on any project and, while the problems are surmountable, they take time to fix. Because of the previously mentioned scheduling difficulties, we only had a few hours of time with the project fully assembled (instead of the *month* our schedule anticipated). As a result, we ran into a design flaw and were only able to make one (unsuccessful and rushed) attempt at fixing it. The root cause of this is probably both the overly optimistic schedule and only starting to put in extra time to try to stay vaguely on top of things very late in the project.
 ## A Side Quest - River
 In fabricating the rollers for this project, I realized I had a perfect opportunity to [explore arc overhangs](https://rivques.github.io/other-random-projects/fun-with-overhangs/), which are a method of 3D printing over thin air when it would otherwise be impossible. Ultimately we didn't end up using the result of this endeavor because I couldn't get the tuning right for the very large rollers we needed, but it was a fun tangent to explore.
+
+## CAD Reflection - Lucia
+One thing that was not achieved, but would have been beneficial, is the order of operation in which you create sketches and parts. Through the process of creating the toolhead, I based a sketch off of a part that had not been created yet, which caused some problems down the line when we needed to go back and revise the sketch. Another important thing to keep in mind when CAD designing is to measure twice and cut once. Doing this would have solved some of our issues when talking about the amount of printing material that was used just for the toolhead. The last thing that is of vital importance is making sure all of the hardware makes it into the assembly. In the long run it does not save any time to flake out on a few screws and nuts. This issue is going back to how many prints we had and that we could have saved time, money and redesigns if i had just added some simple nuts and bolts. Mates are similar in this scenario because if something is not in the correct position, you could be saved lot of hassle if it is just in the right place to begin with.  
