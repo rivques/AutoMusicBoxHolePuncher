@@ -18,7 +18,7 @@ class HolePuncher:
     
     _hole_puncher_state = "OFF"
 
-    USING_DRILL = False
+    USING_DRILL = True
 
     # hardware
     x_stepper = StepperController(StepperMotor(PWMOut(board.D2, frequency=2000), PWMOut(board.D3, frequency=2000), PWMOut(board.D4, frequency=2000), PWMOut(board.D5, frequency=2000)), mm_per_degree=0.106)
