@@ -21,6 +21,8 @@ For this assignment, we had to build a robot arm. To narrow down the endless pos
 # CAD
 __There *should* be captions under each image. If not, hover over the image to see the caption.__
 
+The CAD files are available on Onshape [here](https://cvilleschools.onshape.com/documents/9dcfd2e41dc732feebb8ef70/w/d3e98e741778cada773f210b/e/d4c4ad34af20a37c0dcf5d8a?renderMode=0&uiState=646654cbcaa5af0142df382d).
+
 ![A wide shot of the full CAD assembly](/docs/AMBHP/overview_CAD.png "The full assembly of the machine.")
 ![A shot of the drill bit holder](/docs/AMBHP/drillbit_CAD.png "The drill bit chuck, designed to hold some copper shot in an attempt to have more drilling force.")
 ![A shot of the toolhead assembly](/docs/AMBHP/toolhead_CAD.png "The toolhead. The chuck is spun by the TT motor and is moved up and down on the blue carriage by the two servos.")
