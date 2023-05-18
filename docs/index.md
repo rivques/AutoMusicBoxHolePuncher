@@ -71,6 +71,7 @@ Order of operations was critical to the assembly of this part. Pretty much every
 To securely attach the drill bit to its chuck, we tried a few options. We initially tried simply gripping it from the side with a rubber band, but this was far too weak. We ended up with melting the bit into place: We would heat the bit up with a heat gun, then push it into the perfectly-sized hole in our part. This causes the plastic of the part to melt slightly around the bit, securing it in place when it solidifies.
 ![A FLIR image of the heating of the drill bit](/docs/AMBHP/drillbit_FLIR.jpg "A FLIR image of the heating of the drill bit.")
 # Process and results
+Our full planning doc is [here](https://docs.google.com/document/d/1iNnLZRkjqXBFh56poFhS_28PJHMkaTtxR37U_C84RoI/edit?usp=sharing).
 ## Plan A - Drill Bit
 We originally planned to use a drill bit to drill a hole through the paper. However, the weight alone of the drill bit was not enough to punch through the paper. We tried adding some copper shot to the drill bit holder to make it heavier, but this wasn't enough.
 
